@@ -318,15 +318,14 @@ public class SemProject {
                     }
                 }
                 //Find the maximum possible sum which allows for minimum difference/makespan
-                int last = 0;
-                for (int i = sum / 2; i > 0; i--) {
-                    if (dp[n][i]) {
-                        last = i;
-                        break;
+                int sbstSum = 0;
+                    for (int i = sum / 2; i > 0; i--) {
+                        if (dp[n][i]) {
+                            sbstSum = i;
+                            break;
+                        }
                     }
-                }
                 //Iterating backwards to get the elements of first subset
-                int sbstSum = last;
                 while (sbstSum > 0) {
                     result[firstTask[sbstSum]] = 1;
                     sbstSum -= task[firstTask[sbstSum]];
@@ -335,7 +334,12 @@ public class SemProject {
                 pauseClock = System.nanoTime();
                 sb.append((double) (pauseClock - startClock) / 1000000).append("\n");
                 printResult(result, "Partition DP");
-                System.out.println("dif = " + (sum - 2 * last) + "\n");
+                
+                sbstSum=0;
+                for(int i=0;i<n;i++){
+                    if(result[i]==1) sbstSum+=task[i];
+                }
+                System.out.println("dif = " + (sum - 2 * sbstSum) + "\n");
                 // Printing DP Matrix for testing
 //                System.out.println("last = "+last);
 //                for(int i=0;i<n+1;i++){
@@ -343,7 +347,7 @@ public class SemProject {
 //                        System.out.print(dp[i][j]+" ");
 //                    System.out.println();
 //                }
-            }
+                   }
             writer.write(sb.toString());
             writer.close();
         } catch (IOException e) {
