@@ -129,6 +129,7 @@ public class SemProject {
         Scanner input = new Scanner(System.in);
         int t, n, m;
         int[] result;
+        double maxLoad;
         double[] origin;
         SpanPair[] job, mach;
 
@@ -178,7 +179,11 @@ public class SemProject {
                 sb.append((double) (pauseClock - startClock) / 1000000).append(",");
 
                 printResult(result, "Simple");
-                System.out.println("dif = " + Math.abs(mach[0].load - mach[1].load));
+                maxLoad = Double.MIN_VALUE;
+                for(int i=0;i<m;i++){
+                    maxLoad = Math.max(maxLoad,mach[i].load);
+                }
+                System.out.println("Max Load = " + maxLoad);
 //////////////////Method #2: Fill each machine up to the total average
                 init(origin, job, mach, result);
                 startClock = System.nanoTime();
@@ -209,7 +214,11 @@ public class SemProject {
                 pauseClock = System.nanoTime();
                 sb.append((double) (pauseClock - startClock) / 1000000).append(",");
                 printResult(result, "Up to Average");
-                System.out.println("dif = " + Math.abs(mach[0].load - mach[1].load));
+                maxLoad = Double.MIN_VALUE;
+                for(int i=0;i<m;i++){
+                    maxLoad = Math.max(maxLoad,mach[i].load);
+                }
+                System.out.println("Max Load = " + maxLoad);
 //////////////////Method #3: getting job with longest processing time using extractMax()
                 init(origin, job, mach, result);
                 startClock = System.nanoTime();
@@ -223,8 +232,13 @@ public class SemProject {
                 }
                 pauseClock = System.nanoTime();
                 sb.append((double) (pauseClock - startClock) / 1000000).append(",");
+                
                 printResult(result, "extractMax");
-                System.out.println("dif = " + Math.abs(mach[0].load - mach[1].load));
+                maxLoad = Double.MIN_VALUE;
+                for(int i=0;i<m;i++){
+                    maxLoad = Math.max(maxLoad,mach[i].load);
+                }
+                System.out.println("Max Load = " + maxLoad);
 //////////////////Method #4: sorting jobs in descending order using min heap
                 init(origin, job, mach, result);
                 startClock = System.nanoTime();
@@ -236,37 +250,41 @@ public class SemProject {
                 }
                 pauseClock = System.nanoTime();
                 sb.append((double) (pauseClock - startClock) / 1000000).append(",");
+                
                 printResult(result, "Heap Sort");
-                System.out.println("dif = " + Math.abs(mach[0].load - mach[1].load));
+                maxLoad = Double.MIN_VALUE;
+                for(int i=0;i<m;i++){
+                    maxLoad = Math.max(maxLoad,mach[i].load);
+                }
+                System.out.println("Max Load = " + maxLoad);
 
 ///////////////////Method #5: works only when m = 2 , Partition - Subsets
                 init(origin, job, mach, result);
                 startClock = System.nanoTime();
-                double dif = Double.MAX_VALUE, load1 = 0, load2 = 0;
+                double dif = Double.MAX_VALUE, load0 = 0, load1 = 0;
                 int leadZeros = 0;
-                long mach1 = 1, lastSbst = (1L << n) / 2;   ////////
+                long mach0 = 1, lastSbst = (1L << n) / 2;   ////////
                 String s;
                 for (long i = 1; i < lastSbst; i++) {
                     s = Long.toBinaryString(i);
                     leadZeros = n - s.length();
                     for (int j = 0; j < leadZeros; j++) {
-                        load2 += job[j].load;
+                        load0 += job[j].load;
                     }
                     for (int j = 0; j < s.length(); j++) {
-                        if (s.charAt(j) == '1') {
-                            load1 += job[leadZeros + j].load;
+                        if (s.charAt(j) == '0') {
+                            load0 += job[leadZeros + j].load;
                         } else {
-                            load2 += job[leadZeros + j].load;
+                            load1 += job[leadZeros + j].load;
                         }
                     }
-                    if (Math.abs(load1 - load2) < dif) {
-                        dif = Math.abs(load1 - load2);
-                        mach1 = i;
-                        //System.out.println("mach1 = "+mach1+" dif = "+dif);
+                    if (Math.abs(load1 - load0) < dif) {
+                        dif = Math.abs(load1 - load0);
+                        mach0 = i;
                     }
-                    load1 = load2 = 0;
+                    load0 = load1 = 0;
                 }
-                s = Long.toBinaryString(mach1);
+                s = Long.toBinaryString(mach0);
                 leadZeros = n - s.length();
                 for (int i = 0; i < leadZeros; i++) {
                     result[i] = 0;
@@ -276,8 +294,13 @@ public class SemProject {
                 }
                 pauseClock = System.nanoTime();
                 sb.append((double) (pauseClock - startClock) / 1000000).append(",");
+                
                 printResult(result, "Partition");
-                System.out.println("dif = " + (n > 1 ? dif : job[0].load) + "\n");
+                for(int i=0;i<n;i++){
+                    if(result[i]==0) mach[0].load+=job[i].load;
+                    else mach[1].load += job[i].load;
+                }
+                System.out.println("Max Load = " + Math.max(mach[0].load,mach[1].load));
 //////////////////Method #6: works only with integers & when m = 2 , Partition - DP
                 init(origin, job, mach, result);
                 int[] task = new int[n];//An integer array specifically for this method
@@ -303,7 +326,7 @@ public class SemProject {
                 for (int i = 1; i <= sum / 2; i++) {
                     dp[0][i] = false;
                 }
-                // Fill the partition table in bottom up manner 
+                // Fill the partition table in bottom-up manner 
                 for (int i = 1; i <= n; i++) {
                     for (int j = 1; j <= sum / 2; j++) {
                         // If i'th element is excluded 
@@ -317,7 +340,7 @@ public class SemProject {
                         }
                     }
                 }
-                //Find the maximum possible sum which allows for minimum difference/makespan
+                //Find the maximum possible sum which allows for minimum difference
                 int sbstSum = 0;
                     for (int i = sum / 2; i > 0; i--) {
                         if (dp[n][i]) {
@@ -333,15 +356,15 @@ public class SemProject {
 
                 pauseClock = System.nanoTime();
                 sb.append((double) (pauseClock - startClock) / 1000000).append("\n");
+
                 printResult(result, "Partition DP");
-                
-                sbstSum=0;
                 for(int i=0;i<n;i++){
-                    if(result[i]==1) sbstSum+=task[i];
+                    if(result[i]==0) mach[0].load+=task[i];
+                    else mach[1].load += task[i];
                 }
-                System.out.println("dif = " + (sum - 2 * sbstSum) + "\n");
+                System.out.println("Max Load = " + Math.max(mach[0].load,mach[1].load));
                 // Printing DP Matrix for testing
-//                System.out.println("last = "+last);
+//                System.out.println("\nlast = "+last);
 //                for(int i=0;i<n+1;i++){
 //                    for(int j=0;j<sum/2+1;j++)
 //                        System.out.print(dp[i][j]+" ");
