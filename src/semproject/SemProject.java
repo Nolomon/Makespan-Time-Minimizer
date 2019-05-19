@@ -156,8 +156,8 @@ public class SemProject {
                 Random random = new Random();
                 System.out.println("Input :");
                 for (int i = 0; i < n; i++) {
-                    //origin[i] = input.nextInt();
-                    origin[i] = random.nextInt(100000) + 1;
+                    origin[i] = input.nextInt();
+                    //origin[i] = random.nextInt(100000) + 1;
                     System.out.print(origin[i]);
                     if ((i + 1) % 5 == 0) {
                         System.out.println();
@@ -263,7 +263,7 @@ public class SemProject {
                 startClock = System.nanoTime();
                 double dif = Double.MAX_VALUE, load0 = 0, load1 = 0;
                 int leadZeros = 0;
-                long mach0 = 1, lastSbst = (1L << n) / 2;   ////////
+                long goodPart = 1, lastSbst = (1L << n) / 2;   ////////
                 String s;
                 for (long i = 1; i < lastSbst; i++) {
                     s = Long.toBinaryString(i);
@@ -280,11 +280,11 @@ public class SemProject {
                     }
                     if (Math.abs(load1 - load0) < dif) {
                         dif = Math.abs(load1 - load0);
-                        mach0 = i;
+                        goodPart = i;
                     }
                     load0 = load1 = 0;
                 }
-                s = Long.toBinaryString(mach0);
+                s = Long.toBinaryString(goodPart);
                 leadZeros = n - s.length();
                 for (int i = 0; i < leadZeros; i++) {
                     result[i] = 0;
@@ -313,45 +313,50 @@ public class SemProject {
                 for (int i = 0; i < n; i++) {
                     sum += task[i];
                 }
-                boolean dp[][] = new boolean[n + 1][sum / 2 + 1];
-                //store first task that adds up to the i'th sum
-                int[] firstTask = new int[sum / 2 + 1];
-                Arrays.fill(firstTask, -1);
-                // 0 sum is possible with the empty subset.
-                firstTask[0] = 0;
+                // boolean matrix: i is number of jobs in subset, j is sum of some subset of that subset (try saying that ten times fast!)
+                boolean dp[][] = new boolean[n+1][sum / 2 + 1]; // +1 because we're going to subscribe dp[n][j] and dp[i][sum/2]
+                //store first job that adds up to the i'th sum
+                int[] firstJob = new int[sum / 2 + 1]; // +1 because we're going to subscribe firstTask[sum/2]
+                Arrays.fill(firstJob, -1);
+                // 0 load is possible with the empty subset.
+                firstJob[0] = 0;
+                //Since the empty subset exist in any set og jobs, then all possible subsets are valid for j=0;
                 for (int i = 0; i <= n; i++) {
                     dp[i][0] = true;
                 }
-                //With 0 elements, only 0 is possible 
-                for (int i = 1; i <= sum / 2; i++) {
-                    dp[0][i] = false;
+                //With 0 jobs, only 0 load is possible 
+                for (int j = 1; j <= sum / 2; j++) {
+                    dp[0][j] = false;
                 }
                 // Fill the partition table in bottom-up manner 
                 for (int i = 1; i <= n; i++) {
                     for (int j = 1; j <= sum / 2; j++) {
-                        // If i'th element is excluded 
+                        // If a subset of the first i-1 jobs is equal to load j
+                        // then that's also true for the first i jobs
                         dp[i][j] = dp[i - 1][j];
-                        // If i'th element is included 
-                        if (task[i - 1] <= j) {
+                        // If a subset of the first i-1 jobs is equal to load j minus i'th job
+                        // then a subset of the first i jobs (that includes job i) is equal to load j
+                        if (task[i - 1] <= j) {// for clarity: i-1 is the last element in a set of size i
                             dp[i][j] |= dp[i - 1][j - task[i - 1]];
                         }
-                        if (dp[i][j] && firstTask[j] == -1) {
-                            firstTask[j] = i - 1;
+                        // storing the job that we know it contributes to a sum of j
+                        if (!dp[i-1][j] && dp[i][j]) {
+                            firstJob[j] = i - 1;
                         }
                     }
                 }
                 //Find the maximum possible sum which allows for minimum difference
                 int sbstSum = 0;
-                    for (int i = sum / 2; i > 0; i--) {
-                        if (dp[n][i]) {
-                            sbstSum = i;
+                    for (int j = sum / 2; j > 0; j--) {
+                        if (dp[n][j]) {
+                            sbstSum = j;
                             break;
                         }
                     }
                 //Iterating backwards to get the elements of first subset
                 while (sbstSum > 0) {
-                    result[firstTask[sbstSum]] = 1;
-                    sbstSum -= task[firstTask[sbstSum]];
+                    result[firstJob[sbstSum]] = 1;
+                    sbstSum -= task[firstJob[sbstSum]];
                 }
 
                 pauseClock = System.nanoTime();
