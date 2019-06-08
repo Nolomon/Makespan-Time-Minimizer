@@ -137,7 +137,7 @@ public class SemProject {
         try (FileWriter writer = new FileWriter("Makespan.csv")) {
             sb.append("n,");
             sb.append("Simple,");
-            sb.append("Up to Average,");
+            sb.append("UpToLimit,");
             sb.append("extractMax,");
             sb.append("Heap Sort,");
             sb.append("Partition,");
@@ -184,7 +184,7 @@ public class SemProject {
                     maxLoad = Math.max(maxLoad,mach[i].load);
                 }
                 System.out.println("Max Load = " + maxLoad);
-//////////////////Method #2: Fill each machine up to the total average
+//////////////////Method #2: Fill each machine up to a limit of sum/m, then continue with the previous method
                 init(origin, job, mach, result);
                 startClock = System.nanoTime();
                 double avg = 0;
@@ -192,7 +192,7 @@ public class SemProject {
                 for (int i = 0; i < n; i++) {
                     avg += job[i].load;
                 }
-                avg /= n;
+                avg /= m;
                 // we could've used a set rather than iterating over the whole job[] array
                 // every time, but we decided to keep it simple..
                 for (int i = 0; i < m; i++) {   // i'th machine
@@ -317,46 +317,39 @@ public class SemProject {
                 boolean dp[][] = new boolean[n+1][sum / 2 + 1]; // +1 because we're going to subscribe dp[n][j] and dp[i][sum/2]
                 //store first job that adds up to the i'th sum
                 int[] firstJob = new int[sum / 2 + 1]; // +1 because we're going to subscribe firstTask[sum/2]
-                Arrays.fill(firstJob, -1);
-                // 0 load is possible with the empty subset.
-                firstJob[0] = 0;
-                //Since the empty subset exist in any set og jobs, then all possible subsets are valid for j=0;
+                //Since the empty subset exist in any set of jobs, then all possible subsets are valid for j=0;
                 for (int i = 0; i <= n; i++) {
                     dp[i][0] = true;
-                }
-                //With 0 jobs, only 0 load is possible 
-                for (int j = 1; j <= sum / 2; j++) {
-                    dp[0][j] = false;
                 }
                 // Fill the partition table in bottom-up manner 
                 for (int i = 1; i <= n; i++) {
                     for (int j = 1; j <= sum / 2; j++) {
-                        // If a subset of the first i-1 jobs is equal to load j
+                        // If the sum of a subset of the first i-1 jobs is equal to load j
                         // then that's also true for the first i jobs
                         dp[i][j] = dp[i - 1][j];
-                        // If a subset of the first i-1 jobs is equal to load j minus i'th job
-                        // then a subset of the first i jobs (that includes job i) is equal to load j
+                        // If the sum of a subset of the first i-1 jobs is equal to load j minus i'th job
+                        // then a subset of the first i jobs is equal to load j
                         if (task[i - 1] <= j) {// for clarity: i-1 is the last element in a set of size i
                             dp[i][j] |= dp[i - 1][j - task[i - 1]];
                         }
-                        // storing the job that we know it contributes to a sum of j
+                        // storing the job that we know contribute to the sum j
                         if (!dp[i-1][j] && dp[i][j]) {
                             firstJob[j] = i - 1;
                         }
                     }
                 }
-                //Find the maximum possible sum which allows for minimum difference
-                int sbstSum = 0;
+                //Find the maximum possible sum under sum/2 which allows for minimum load difference (and minimum makespan)
+                int machineLoad = 0;
                     for (int j = sum / 2; j > 0; j--) {
                         if (dp[n][j]) {
-                            sbstSum = j;
+                            machineLoad = j;
                             break;
                         }
                     }
                 //Iterating backwards to get the elements of first subset
-                while (sbstSum > 0) {
-                    result[firstJob[sbstSum]] = 1;
-                    sbstSum -= task[firstJob[sbstSum]];
+                while (machineLoad > 0) {
+                    result[firstJob[machineLoad]] = 1; // elements/jobs that still have a value of 0 belong to the other subset/machine
+                    machineLoad -= task[firstJob[machineLoad]];
                 }
 
                 pauseClock = System.nanoTime();
@@ -369,12 +362,11 @@ public class SemProject {
                 }
                 System.out.println("Max Load = " + Math.max(mach[0].load,mach[1].load));
                 // Printing DP Matrix for testing
-//                System.out.println("\nlast = "+last);
-//                for(int i=0;i<n+1;i++){
-//                    for(int j=0;j<sum/2+1;j++)
-//                        System.out.print(dp[i][j]+" ");
-//                    System.out.println();
-//                }
+                for(int i=0;i<=n;i++){
+                    for(int j=0;j<=sum/2;j++)
+                        System.out.print(dp[i][j]+"    ");
+                    System.out.println();
+                }
                    }
             writer.write(sb.toString());
             writer.close();
